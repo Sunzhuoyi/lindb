@@ -14,7 +14,6 @@ interface SiderMenuProps {
 }
 
 interface SiderMenuStatus {
-    currentBreadcrumbPath: Array<string>
 }
 
 export default class SiderMenu extends React.Component<SiderMenuProps, SiderMenuStatus> {
@@ -27,9 +26,6 @@ export default class SiderMenu extends React.Component<SiderMenuProps, SiderMenu
         this.breadcrumbStore = StoreManager.BreadcrumbStore
         this.flatMenu = this.getFlatMenu()
         this.currentBreadcrumbPath = []
-        this.state = {
-            currentBreadcrumbPath: []
-        }
     }
 
     renderMenu(menus: Array<any>, parentPath?: string) {
@@ -54,32 +50,39 @@ export default class SiderMenu extends React.Component<SiderMenuProps, SiderMenu
 
     @autobind
     handleMenuClick(e: any) {
-        /* e.keyPath为点击菜单所在的path以及父path组成的数组，父path在数组尾部*/
+        /* e.keyPath为点击菜单所在的path以及parent path组成的数组，parent path在数组尾部*/
         this.currentBreadcrumbPath = e.keyPath.reverse()
         this.setBreadcrumbs()
     }
 
+    /**
+     * @description update the data in breadcrumbStore based on the current breadcrumb routing data
+     */
     @autobind
     setBreadcrumbs() {
         let breadcrumbs: Array<BreadcrumbStatus> = []
-        this.currentBreadcrumbPath.map((path: string) => {
-            this.flatMenu.map(item => {
-                if (path == item.path) {
-                    breadcrumbs.push(item)
+        this.currentBreadcrumbPath.forEach((path: string) => (
+            this.flatMenu.forEach(item => {
+                if (path === item.path) {
+                  breadcrumbs.push(item)
                 }
             })
-        })
+        ))
         this.breadcrumbStore.setBreadcrumbs(breadcrumbs)
     }
 
+    /**
+     * @description Flatten the parent-child structure of the MENU to fit Breadcrumb structure
+     * @return flattening menu
+     */
     @autobind
     getFlatMenu() {
         let flatMenu: Array<BreadcrumbStatus> = []
-        MENUS.map(item => {
+        MENUS.forEach(item => {
             if (item.children) {
                 flatMenu.push({path: item.path, label: item.title})
-                item.children.map(child => {
-                    flatMenu.push({path: item.path + child.path, label: child.title})
+                item.children.forEach(child => {
+                    flatMenu.push({path: item.path + child.path, label: child.title});
                 })
             } else {
                 flatMenu.push({path: item.path, label: item.title})
@@ -87,11 +90,12 @@ export default class SiderMenu extends React.Component<SiderMenuProps, SiderMenu
         })
         return flatMenu
     }
-
+    /**
+     * @description initialize the breadcrumb data by getting the page routing
+     */
     @autobind
     initBreadcrumb() {
-        const {location: {hash}} = window
-        const path = hash.replace('#', '')
+        const path = this.getPath()
         let pathArr = path.split('/').slice(1)
         let result = ''
         let breadcrumbPathArray = pathArr.map((e, i) => {
@@ -103,13 +107,23 @@ export default class SiderMenu extends React.Component<SiderMenuProps, SiderMenu
         this.setBreadcrumbs()
     }
 
+    /**
+     * @description get current hash path and get rid of '#'
+     * @example '#/index' => '/index'
+     */
+    @autobind
+    getPath() {
+        const {location: {hash}} = window;
+        const path = hash.replace('#', '')
+        return path
+    }
+
     componentDidMount(): void {
         this.initBreadcrumb()
     }
 
     render() {
-        const {location: {hash}} = window
-        const path = hash.replace('#', '')
+        const path = this.getPath()
         return (
             <Sider className="lindb-sider" collapsible={true} trigger={null}>
                 {/* Logo */}
